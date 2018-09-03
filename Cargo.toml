@@ -1,0 +1,12 @@
+[package]
+name = "iconic-test-task"
+version = "0.1.0"
+authors = ["Kitsu <mail@kitsu.me>"]
+
+[dependencies]
+rand = "0.5.5"
+criterion = "0.2"
+
+[[bench]]
+name = "benches"
+harness = false
