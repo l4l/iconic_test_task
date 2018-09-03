@@ -3,6 +3,7 @@ extern crate iconic_test_task;
 extern crate criterion;
 
 use criterion::Criterion;
+use criterion::black_box;
 
 extern crate rand;
 use iconic_test_task::*;
@@ -15,21 +16,55 @@ const MAX_SIZE: Size = 100;
 const MIN_META: Meta = 10;
 const MAX_META: Meta = 100;
 
-fn split_routine(inpt: (List, Vec<(Price, Size)>)) -> List {
-    let (list, issues) = inpt;
-    issues.into_iter().fold(list, |mut lst, i| lst.split(i))
+struct ListWrapper {
+    lst: List,
+    issues: Vec<(Price, Size)>,
+    splitted: Vec<List>,
+}
+
+impl ListWrapper {
+    fn base(list: List, issues: Vec<(Price, Size)>) -> ListWrapper {
+        ListWrapper {
+            lst: list,
+            issues: issues,
+            splitted: vec![],
+        }
+    }
+
+    fn from(lst: List, issues: Vec<(Price, Size)>, splitted: Vec<List>) -> ListWrapper {
+        ListWrapper {
+            lst: lst,
+            issues: issues,
+            splitted: splitted,
+        }
+    }
+
+    fn separate(self) -> (List, Vec<(Price, Size)>, Vec<List>) {
+        (self.lst, self.issues, self.splitted)
+    }
+}
+
+fn split_routine(inpt: ListWrapper) -> ListWrapper {
+    let (mut list, issues, mut splitted) = inpt.separate();
+    for i in issues.iter() {
+        splitted.push(black_box(list.split(*i)))
+    }
+    ListWrapper::from(list, issues, splitted)
 }
 
 fn split_benchmark(c: &mut Criterion) {
     c.bench_function("split", |b| {
-        b.iter_with_setup(|| (gen_list(100), vec![gen_issue()]), split_routine)
+        b.iter_with_setup(
+            || ListWrapper::base(gen_list(100), vec![gen_issue()]),
+            split_routine,
+        )
     });
 }
 
 fn split_3_benchmark(c: &mut Criterion) {
     c.bench_function("split_3", |b| {
         b.iter_with_setup(
-            || (gen_list(100), vec![gen_issue(), gen_issue(), gen_issue()]),
+            || ListWrapper::base(gen_list(100), vec![gen_issue(), gen_issue(), gen_issue()]),
             split_routine,
         )
     });
@@ -37,7 +72,10 @@ fn split_3_benchmark(c: &mut Criterion) {
 
 fn split_bigger_benchmark(c: &mut Criterion) {
     c.bench_function("split_bigger", |b| {
-        b.iter_with_setup(|| (gen_list(1000), vec![gen_issue()]), split_routine)
+        b.iter_with_setup(
+            || ListWrapper::base(gen_list(1000), vec![gen_issue()]),
+            split_routine,
+        )
     });
 }
 
